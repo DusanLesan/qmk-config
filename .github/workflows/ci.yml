@@ -37,12 +37,8 @@ jobs:
           python3 -m pip install --user qmk
           qmk setup -y
           ls ~/qmk_firmware
-          # 库名如果和你的不同，请注意要替换
           cp -r ~/work/qmk-config/qmk-config/keyboards ~/qmk_firmware/
-          # 编译原有键盘
-          qmk compile -kb sofle -km via
-          # 编译新增加键盘
-          qmk compile -kb fingerpunch/bgkeeb -km default
+          qmk compile -kb splitkb/kyria/rev3 -km default -e CONVERT_TO=promicro_rp2040
 
       - name: Copy assets to Repo
         run: |
@@ -50,42 +46,26 @@ jobs:
           rm -f $GITHUB_WORKSPACE/*.bin
           find ~/qmk_firmware -maxdepth 1 -name "*.hex" -exec \cp '{}' $GITHUB_WORKSPACE \;
           find ~/qmk_firmware -maxdepth 1 -name "*.bin" -exec \cp '{}' $GITHUB_WORKSPACE \;
+          find ~/qmk_firmware -maxdepth 1 -name "*.uf2" -exec \cp '{}' $GITHUB_WORKSPACE \;
           ls $GITHUB_WORKSPACE
 
       - name: Set Release Date
         run: |
           echo "RELEASE_DATE=$(date --rfc-3339=date)" >> ${GITHUB_ENV}
 
-      #- name: Create Pull Request
-      #  uses: peter-evans/create-pull-request@v3
-      #  with:
-      #    token: ${{ secrets.PAT }}
-      #    commit-message: Sync repo to contain VIA Firmware as of ${{env.RELEASE_DATE}}'
-      #    title: '[automated-sync] VIA Firmware as of ${{env.RELEASE_DATE}}'
-      #    body: >
-      #      This PR is auto-generated
-      #    labels: automated-sync
-      #    team-reviewers: the-via/core
-
       - name: Package assets
         run: |
           mkdir ~/qmk_firmware/firmware
           find ~/qmk_firmware -maxdepth 1 -name "*.hex" -exec mv '{}' ~/qmk_firmware/firmware \;
           find ~/qmk_firmware -maxdepth 1 -name "*.bin" -exec mv '{}' ~/qmk_firmware/firmware \;
-          # 如果不是需要 QMK 源代码，可以将下面两行注释掉
-          # 将 QMK 源码压缩
-          tar -cvf /home/runner/filename.tar /home/runner/qmk_firmware
-          # 将 QMK 源码的压缩包移动到待上传目录
-          mv /home/runner/filename.tar /home/runner/qmk_firmware/firmware/filename.tar
+          find ~/qmk_firmware -maxdepth 1 -name "*.uf2" -exec mv '{}' ~/qmk_firmware/firmware \;
 
       - name: Create GitHub release
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          # 根据日期自动产生 tag，若一天内需要多次编译测试，建议根据需要修改，注意双引号保留，例：automatic_release_tag: "lastest"
           automatic_release_tag: "${{env.RELEASE_DATE}}"
           title: ${{ env.ReleaseVersion }}
           prerelease: false
-          # 上传编译好的固件和 QMK 源码压缩包
           files: |
             /home/runner/qmk_firmware/firmware/*
