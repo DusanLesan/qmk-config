@@ -170,7 +170,7 @@ void ql_finished (tap_dance_state_t *state, void *user_data) {
   ql_tap_state.state = cur_dance(state);
   switch (ql_tap_state.state) {
     case SINGLE_TAP:
-      tap_code(KC_QUOT);
+      tap_code(KC_SPC);
       break;
     case SINGLE_HOLD:
       layer_on(_NAV);
