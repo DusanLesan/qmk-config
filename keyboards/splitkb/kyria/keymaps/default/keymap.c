@@ -200,3 +200,29 @@ void ql_reset (tap_dance_state_t *state, void *user_data) {
 tap_dance_action_t tap_dance_actions[] = {
   [QUOT_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ql_finished, ql_reset)
 };
+
+void keyboard_post_init_user(void) {
+  rgblight_enable_noeeprom();
+  rgblight_sethsv_noeeprom(HSV_BLACK);
+  rgblight_mode_noeeprom(RGBLIGHT_MODE_STATIC_LIGHT);
+}
+
+void housekeeping_task_user(void) {
+  switch (get_highest_layer(layer_state | default_layer_state)) {
+    case 1:
+      rgblight_setrgb_at(0, 20, 0, 0);
+      rgblight_setrgb_at(0, 20, 0, 1);
+      break;
+    case 2:
+      rgblight_setrgb_at(20, 0, 0, 0);
+      rgblight_setrgb_at(20, 0, 0, 1);
+      break;
+    case 3:
+      rgblight_setrgb_at(0, 0, 20, 0);
+      rgblight_setrgb_at(0, 0, 20, 1);
+      break;
+    default :
+      rgblight_setrgb_at(RGB_BLACK, 0);
+      rgblight_setrgb_at(RGB_BLACK, 1);
+  }
+}
