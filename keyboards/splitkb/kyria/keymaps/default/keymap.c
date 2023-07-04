@@ -22,7 +22,6 @@ enum layers {
   _FUNCTION,
 };
 
-// tap dance
 int cur_dance (tap_dance_state_t *state);
 void td_finished (tap_dance_state_t *state, void *user_data);
 void td_reset (tap_dance_state_t *state, void *user_data);
@@ -65,7 +64,6 @@ tap_dance_action_t tap_dance_actions[] = {
 #define SFT_ENT  MT(MOD_RSFT, KC_ENT)
 #define CTL_SPC  MT(MOD_LCTL, KC_SPC)
 
-// clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /*
  * Base Layer: QWERTY
@@ -204,21 +202,14 @@ void keyboard_post_init_user(void) {
 }
 
 void housekeeping_task_user(void) {
-  switch (get_highest_layer(layer_state | default_layer_state)) {
-    case 1:
-      rgblight_setrgb_at(0, 20, 0, 0);
-      rgblight_setrgb_at(0, 20, 0, 1);
-      break;
-    case 2:
-      rgblight_setrgb_at(20, 0, 0, 0);
-      rgblight_setrgb_at(20, 0, 0, 1);
-      break;
-    case 3:
-      rgblight_setrgb_at(0, 0, 20, 0);
-      rgblight_setrgb_at(0, 0, 20, 1);
-      break;
-    default :
-      rgblight_setrgb_at(RGB_BLACK, 0);
-      rgblight_setrgb_at(RGB_BLACK, 1);
-  }
+  uint8_t values[4][3] = {
+    {0, 0, 0},
+    {0, 20, 0},
+    {20, 0, 0},
+    {0, 0, 20}
+  };
+
+  uint8_t* params = values[get_highest_layer(layer_state | default_layer_state)];
+  rgblight_setrgb_at(params[0], params[1], params[2], 0);
+  rgblight_setrgb_at(params[0], params[1], params[2], 1);
 }
