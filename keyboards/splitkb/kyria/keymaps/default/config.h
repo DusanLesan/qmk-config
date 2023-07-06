@@ -35,6 +35,8 @@
 #    endif
 #endif
 
+#define HOLD_ON_OTHER_KEY_PRESS
+
 #define SPLIT_LED_STATE_ENABLE
 #define SPLIT_LAYER_STATE_ENABLE
 
