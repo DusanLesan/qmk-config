@@ -202,14 +202,26 @@ void keyboard_post_init_user(void) {
 }
 
 void housekeeping_task_user(void) {
-  uint8_t values[4][3] = {
+  uint8_t values[][3] = {
     {0, 0, 0},
     {0, 20, 0},
     {20, 0, 0},
-    {0, 0, 20}
+    {0, 0, 20},
+    {20, 0, 20},
+    {20, 20, 0},
+    {0, 20, 20},
+    {20, 20, 20}
   };
 
-  uint8_t* params = values[get_highest_layer(layer_state | default_layer_state)];
+  uint8_t mods = get_mods();
+  uint8_t* params = values[
+    mods & MOD_MASK_GUI ? 4 :
+    mods & MOD_MASK_ALT ? 5 :
+    mods & MOD_MASK_CTRL ? 6 :
+    mods & MOD_MASK_SHIFT ? 7 :
+    get_highest_layer(layer_state | default_layer_state)
+  ];
+
   rgblight_setrgb_at(params[0], params[1], params[2], 0);
   rgblight_setrgb_at(params[0], params[1], params[2], 1);
 }
