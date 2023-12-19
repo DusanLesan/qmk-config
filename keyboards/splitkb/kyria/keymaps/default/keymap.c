@@ -22,39 +22,6 @@ enum layers {
   _FUNCTION,
 };
 
-int cur_dance (tap_dance_state_t *state);
-void td_finished (tap_dance_state_t *state, void *user_data);
-void td_reset (tap_dance_state_t *state, void *user_data);
-
-#define ACTION_TAP_DANCE_FN_CUSTOM(user_fn_on_each_tap, user_fn_on_dance_finished, user_fn_on_dance_reset, user_user_data) \
-  { .fn = {user_fn_on_each_tap, user_fn_on_dance_finished, user_fn_on_dance_reset}, .user_data = (void *)user_user_data, }
-
-typedef struct {
-  bool is_press_action;
-  int state;
-} tap;
-
-enum {
-  SINGLE_TAP = 1,
-  SINGLE_HOLD = 2,
-  DOUBLE_TAP = 3
-};
-
-enum {
-  NAV_SPC = 0,
-  SYM_ENT
-};
-
-typedef struct {
-  uint16_t layer;
-  uint16_t tap_key;
-} td_user_data_t;
-
-tap_dance_action_t tap_dance_actions[] = {
-  [NAV_SPC] = ACTION_TAP_DANCE_FN_CUSTOM(NULL, td_finished, td_reset, &((td_user_data_t) { _NAV, KC_SPC })),
-  [SYM_ENT] = ACTION_TAP_DANCE_FN_CUSTOM(NULL, td_finished, td_reset, &((td_user_data_t) { _SYM, KC_ENT }))
-};
-
 #define SYM      MO(_SYM)
 #define NAV      MO(_NAV)
 #define FKEYS    MO(_FUNCTION)
@@ -63,6 +30,12 @@ tap_dance_action_t tap_dance_actions[] = {
 #define CTL_QUOT MT(MOD_RCTL, KC_QUOTE)
 #define SFT_ENT  MT(MOD_RSFT, KC_ENT)
 #define CTL_SPC  MT(MOD_LCTL, KC_SPC)
+
+#define NAV_SPC LT(_NAV, KC_SPC)
+#define SYS_ENT LT(_SYM, KC_ENT)
+
+bool shift_held = false; // Track if Shift is held
+
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /*
@@ -80,10 +53,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  *                        `----------------------------------'  `----------------------------------'
  */
   [_QWERTY] = LAYOUT(
-    KC_TAB , KC_Q, KC_W, KC_E   , KC_R   , KC_T   ,                                              KC_Y   , KC_U   , KC_I   , KC_O  , KC_P   , KC_BSPC ,
-    CTL_ESC, KC_A, KC_S, KC_D   , KC_F   , KC_G   ,                                              KC_H   , KC_J   , KC_K   , KC_L  , KC_SCLN, CTL_QUOT,
-    KC_LSFT, KC_Z, KC_X, KC_C   , KC_V   , KC_B   , KC_LBRC, KC_CAPS    ,        FKEYS, KC_RBRC, KC_N   , KC_M   , KC_COMM, KC_DOT, KC_SLSH, KC_RSFT ,
-                         KC_LCTL, KC_LALT, KC_LGUI, CTL_SPC, TD(NAV_SPC),  TD(SYM_ENT), SFT_ENT, KC_RALT, KC_RGUI, KC_APP
+    KC_TAB , KC_Q, KC_W, KC_E   , KC_R   , KC_T   ,                                          KC_Y   , KC_U   , KC_I   , KC_O  , KC_P   , KC_BSPC ,
+    CTL_ESC, KC_A, KC_S, KC_D   , KC_F   , KC_G   ,                                          KC_H   , KC_J   , KC_K   , KC_L  , KC_SCLN, CTL_QUOT,
+    KC_LSFT, KC_Z, KC_X, KC_C   , KC_V   , KC_B   , KC_LBRC, KC_CAPS,        FKEYS, KC_RBRC, KC_N   , KC_M   , KC_COMM, KC_DOT, KC_SLSH, KC_RSFT ,
+                         KC_LCTL, KC_LALT, KC_LGUI, CTL_SPC, NAV_SPC,      SYS_ENT, SFT_ENT, KC_RALT, KC_RGUI, KC_APP
   ),
 
 /*
@@ -150,49 +123,33 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   )
 };
 
-int cur_dance (tap_dance_state_t *state) {
-  if (state->count == 1) {
-    if (!state->pressed) {
-      return SINGLE_TAP;
-    } else {
-      return SINGLE_HOLD;
-    }
-  } else if (state->count == 2) {
-    return DOUBLE_TAP;
-  }
-  else return 8;
-}
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+  static bool shift_held = false;
 
-static tap td_tap_state = {
-  .is_press_action = true,
-  .state = 0
-};
-
-void td_finished(tap_dance_state_t *state, void *user_data) {
-  td_tap_state.state = cur_dance(state);
-  td_user_data_t *data = (td_user_data_t *)user_data;
-  switch (td_tap_state.state) {
-    case SINGLE_TAP:
-      tap_code(data->tap_key);
-      break;
-    case SINGLE_HOLD:
-      layer_on(data->layer);
-      break;
-    case DOUBLE_TAP:
-      if (layer_state_is(data->layer)) {
-        layer_off(data->layer);
+  switch (keycode) {
+    case SFT_ENT:
+      if (record->event.pressed) {
+        shift_held = true;
       } else {
-        layer_on(data->layer);
+        shift_held = false;
+      }
+      return true;
+
+    case NAV_SPC:
+      if (record->event.pressed && shift_held) {
+        layer_invert(_NAV);
+        return false;
+      }
+      break;
+
+    case SYS_ENT:
+      if (record->event.pressed && shift_held) {
+        layer_invert(_SYM);
+        return false;
       }
       break;
   }
-}
-
-void td_reset(tap_dance_state_t *state, void *user_data) {
-  if (td_tap_state.state==SINGLE_HOLD) {
-    layer_off(((td_user_data_t *)user_data)->layer);
-  }
-  td_tap_state.state = 0;
+  return true;
 }
 
 void keyboard_post_init_user(void) {
