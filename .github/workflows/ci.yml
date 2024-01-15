@@ -43,7 +43,6 @@ jobs:
             qmkfm/qmk_cli \
             /bin/bash -c "echo 'Running commands inside the container'; \
               qmk setup -y; \
-              rm -rf /qmk_firmware/.git; \
               rm -rf /qmk_firmware/keyboards; \
               rm -rf /qmk_firmware/users; \
               cp -r /workspace/keyboards /qmk_firmware/; \
